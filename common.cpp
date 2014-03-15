@@ -163,7 +163,7 @@ int find_option( int argc, char **argv, const char *option )
     return -1;
 }
 
-int read_int( int argc, char **argv, const char *option, int default_value )
+int read_int( int argc, char **argv, const char *option, const int default_value )
 {
     int iplace = find_option( argc, argv, option );
     if( iplace >= 0 && iplace < argc-1 )

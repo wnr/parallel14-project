@@ -49,7 +49,7 @@ void save( FILE *f, int n, particle_t *p );
 //  argument processing routines
 //
 int find_option( int argc, char **argv, const char *option );
-int read_int( int argc, char **argv, const char *option, int default_value );
+int read_int( int argc, char **argv, const char *option, const int default_value );
 char *read_string( int argc, char **argv, const char *option, char *default_value );
 
 #define PARTICLE_SIZE 0.001
