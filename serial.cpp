@@ -66,9 +66,6 @@ int main( int argc, char **argv )
         }
     }    
 
-
-    printf("num_cells_side: %d\ncell_size: %lf\nmap_size: %lf\n", num_cells_side, cell_size, get_size());
-
     //
     //  simulate a number of time steps
     //
