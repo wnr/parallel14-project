@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <math.h>
 #include <vector>
+#include <list>
 #include "common.h"
 
 
@@ -66,18 +67,28 @@ int main( int argc, char **argv )
         }
     }    
 
+    double before = 0;
+
+    double t = 0;
+    double tc2 = 0;
+    double ta = 0;
+    double tm = 0;
+
     //
     //  simulate a number of time steps
     //
     double simulation_time = read_timer( );
     for( int step = 0; step < s; step++ )
     {
+        before = read_timer();
         for(int i = 0; i < num_cells_side; i++) {
             for(int j = 0; j < num_cells_side; j++) {
                 (*area)[i][j]->clear();
             }
         }
+        tc2 += read_timer() - before;
 
+        before = read_timer();
         for(int i = 0; i < n; i++) {
             double x = particles[i].x;
             double y = particles[i].y;
@@ -106,11 +117,13 @@ int main( int argc, char **argv )
             //     }
             // }
         }
+        ta += read_timer() - before;
 
         //
         //  compute forces
         //
         
+        before = read_timer();
         for(int i = 0; i < num_cells_side; i++) {
             for(int j = 0; j < num_cells_side; j++) {
                 Cell *cell = (*area)[i][j];
@@ -134,12 +147,16 @@ int main( int argc, char **argv )
                 }
             }
         }
+        t += read_timer() - before;
 
         //
         //  move particles
         //
-        for( int i = 0; i < n; i++ ) 
+        before = read_timer();
+        for( int i = 0; i < n; i++ ) {
             move( particles[i] );
+        }
+        tm += read_timer() - before;
         
         //
         //  save if necessary
@@ -149,7 +166,9 @@ int main( int argc, char **argv )
     }
     simulation_time = read_timer( ) - simulation_time;
     
-    printf( "n = %d, simulation time = %g seconds\n", n, simulation_time );
+    printf("\nclear: %f\nadd: %f\nalgo: %f\nmove: %f", tc2, ta, t, tm);
+
+    printf( "\nn = %d, simulation time = %g seconds\n", n, simulation_time );
     
     free( particles );
     if( fsave )

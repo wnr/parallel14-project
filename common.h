@@ -1,7 +1,7 @@
 #ifndef __CS267_COMMON_H__
 #define __CS267_COMMON_H__
 
-#include <list>
+#include <vector>
 
 inline int min( int a, int b ) { return a < b ? a : b; }
 inline int max( int a, int b ) { return a > b ? a : b; }
@@ -56,7 +56,7 @@ char *read_string( int argc, char **argv, const char *option, char *default_valu
 
 class Cell {
 public:
-	std::list<particle_t*> particles;
+	std::vector<particle_t*> particles;
 
 public:
 	Cell() {}
@@ -69,11 +69,11 @@ public:
 		particles.clear();
 	}
 
-	std::list<particle_t*>::iterator begin() {
+	std::vector<particle_t*>::iterator begin() {
 		return particles.begin();
 	}
 
-	std::list<particle_t*>::iterator end() {
+	std::vector<particle_t*>::iterator end() {
 		return particles.end();
 	}
 };

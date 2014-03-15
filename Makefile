@@ -2,7 +2,8 @@
 # Computers with Red Hat Enterprise Linux 5 in the computer room 648, KTH Forum, Kista
 #
 #CC = g++44
-CC = gcc-4.9 -lstdc++
+CC = g++
+CC_OPENMP = gcc-4.9 -lstdc++
 MPCC =  mpicc -cc=g++44
 OPENMP = -fopenmp
 LIBS = -lm
@@ -17,15 +18,17 @@ serial: serial.o common.o
 pthreads: pthreads.o common.o
 	$(CC) -o $@ $(LIBS) -lpthread pthreads.o common.o
 openmp: openmp.o common.o
-	$(CC) -o $@ $(LIBS) $(OPENMP) openmp.o common.o
+	$(CC_OPENMP) -o $@ $(LIBS) $(OPENMP) openmp.o common.o
 mpi: mpi.o common.o
 	$(MPCC) -o $@ $(LIBS) $(MPILIBS) mpi.o common.o
 
 old_serial: old_serial.o common.o
 	$(CC) -o $@ $(LIBS) old_serial.o common.o
+old_openmp: old_openmp.o common.o
+	$(CC_OPENMP) -o $@ $(LIBS) $(OPENMP) old_openmp.o common.o
 
 openmp.o: openmp.cpp common.h
-	$(CC) -c $(OPENMP) $(CFLAGS) openmp.cpp
+	$(CC_OPENMP) -c $(OPENMP) $(CFLAGS) openmp.cpp
 serial.o: serial.cpp common.h
 	$(CC) -c $(CFLAGS) serial.cpp
 pthreads.o: pthreads.cpp common.h
@@ -37,6 +40,8 @@ common.o: common.cpp common.h
 
 old_serial.o: old_serial.cpp common.h
 	$(CC) -c $(CFLAGS) old_serial.cpp
+old_openmp.o: old_openmp.cpp common.h
+	$(CC_OPENMP) -c $(OPENMP) $(CFLAGS) old_openmp.cpp
 
 clean:
 	rm -f *.o $(TARGETS)
