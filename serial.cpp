@@ -39,6 +39,7 @@ int main( int argc, char **argv )
     
     int num_cells_side = ((sqrt(n)) + 0.5);
     double cell_size = (get_size()/num_cells_side);
+    cell_size *= 1.01; // Fix so that the cells cover 101 % of the map, to make sure that we don't miss any coordinates
 
     vector<vector<Cell*> > *area = new vector<vector<Cell*> >();
     vector<vector<list<Cell*>*> > *collissionCells = new vector<vector<list<Cell*>*> >;
@@ -57,7 +58,7 @@ int main( int argc, char **argv )
         for(int j = 0; j < num_cells_side; j++) {
             for(int row = i-1; row <= i+1; row++) {
                 for(int col = j-1; col <= j+1; col++) {
-                    if(row > 0 && col > 0 && row < num_cells_side && col < num_cells_side) {
+                    if(row >= 0 && col >= 0 && row < num_cells_side && col < num_cells_side) {
                         (*collissionCells)[i][j]->push_back((*area)[row][col]);
                     }
                 }
@@ -65,6 +66,8 @@ int main( int argc, char **argv )
         }
     }    
 
+
+    printf("num_cells_side: %d\ncell_size: %lf\nmap_size: %lf\n", num_cells_side, cell_size, get_size());
 
     //
     //  simulate a number of time steps
