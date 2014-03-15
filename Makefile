@@ -21,6 +21,9 @@ openmp: openmp.o common.o
 mpi: mpi.o common.o
 	$(MPCC) -o $@ $(LIBS) $(MPILIBS) mpi.o common.o
 
+old_serial: old_serial.o common.o
+	$(CC) -o $@ $(LIBS) old_serial.o common.o
+
 openmp.o: openmp.cpp common.h
 	$(CC) -c $(OPENMP) $(CFLAGS) openmp.cpp
 serial.o: serial.cpp common.h
@@ -31,6 +34,9 @@ mpi.o: mpi.cpp common.h
 	$(MPCC) -c $(CFLAGS) mpi.cpp
 common.o: common.cpp common.h
 	$(CC) -c $(CFLAGS) common.cpp
+
+old_serial.o: old_serial.cpp common.h
+	$(CC) -c $(CFLAGS) old_serial.cpp
 
 clean:
 	rm -f *.o $(TARGETS)
