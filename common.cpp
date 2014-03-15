@@ -53,7 +53,7 @@ double get_size() {
 //
 void init_particles( int n, particle_t *p )
 {
-    srand48( time( NULL ) );
+    srand48( 0 );
         
     int sx = (int)ceil(sqrt((double)n));
     int sy = (n+sx-1)/sx;
