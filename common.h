@@ -69,6 +69,10 @@ public:
 		particles.clear();
 	}
 
+	void remove(std::vector<particle_t*>::iterator it) {
+		particles.erase(it);
+	}
+
 	std::vector<particle_t*>::iterator begin() {
 		return particles.begin();
 	}

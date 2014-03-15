@@ -68,6 +68,16 @@ int main( int argc, char **argv )
         }
     }    
 
+    for(int i = 0; i < n; i++) {
+        double x = particles[i].x;
+        double y = particles[i].y;
+
+
+        int row = x / cell_size;
+        int col = y / cell_size;
+        (*area)[row][col]->add(&particles[i]);
+    }
+
     //
     //  simulate a number of time steps
     //
@@ -80,37 +90,68 @@ int main( int argc, char **argv )
     double ta = 0;
     double tm = 0;
 
+    int count = 0;
+
+    vector<vector<particle_t*> > to_move;
+    for(int i = 0; i < omp_get_num_procs(); i++) {
+        to_move.push_back(vector<particle_t*>());
+    }
+
     #pragma omp parallel
     for(int step = 0; step < s; step++ )
     {
         before = read_timer();
-        #pragma omp for
-        for(int i = 0; i < num_cells_side; i++) {
-            for(int j = 0; j < num_cells_side; j++) {
-                (*area)[i][j]->clear();
-            }
-        }
         tc2 += read_timer() - before;
 
         #pragma omp barrier
 
         before = read_timer();
+        
         #pragma omp for
-            for(int i = 0; i < n; i++) {
-                double x = particles[i].x;
-                double y = particles[i].y;
+        for(int i = 0; i < num_cells_side; i++) {
+            int thread = omp_get_thread_num();
+            for(int j = 0; j < num_cells_side; j++) {
+                for(auto it = (*area)[i][j]->begin(); it != (*area)[i][j]->end();) {
+                    particle_t *particle = *it;
 
-                int row = x / cell_size;
-                int col = y / cell_size;
+                    double x = particle->x;
+                    double y = particle->y;
 
-                #pragma omp critical
-                (*area)[row][col]->add(&particles[i]);
+                    int row = x / cell_size;
+                    int col = y / cell_size;
+
+                    if(row != i || col != j) {
+                        it = (*area)[i][j]->particles.erase(it);
+                        to_move[thread].push_back(particle);
+                    } else {
+                        ++it;
+                    }
+                }
+            }   
+        }
+
+        #pragma omp single
+        {
+            count += to_move.size();
+
+            for(int i = 0; i < to_move.size(); i++) {
+                for(auto it = to_move[i].begin(); it != to_move[i].end(); it++) {
+                    particle_t *particle = *it;
+
+                    double x = particle->x;
+                    double y = particle->y;
+
+                    int row = x / cell_size;
+                    int col = y / cell_size;
+
+                    (*area)[row][col]->add(particle);
+                }
+
+                to_move[i].clear();
             }
-
-
-        #pragma omp barrier
-        #pragma omp master
-        ta += read_timer() - before;
+            
+            ta += read_timer() - before;   
+        }
 
 
         //
@@ -157,10 +198,11 @@ int main( int argc, char **argv )
         for( int i = 0; i < n; i++ ) {
             move( particles[i] );
         }
-        tm += read_timer() - before;
 
         #pragma omp barrier
 
+        #pragma omp master
+        tm += read_timer() - before;
         //
         //  save if necessary
         //
@@ -171,6 +213,7 @@ int main( int argc, char **argv )
     simulation_time = read_timer( ) - simulation_time;
     
     printf("\nclear: %f\nadd: %f\nalgo: %f\nmove: %f", tc2, ta, t, tm);
+    printf("\ncount: %d", count);
 
     printf( "\nn = %d, simulation time = %g seconds\n", n, simulation_time );
     
