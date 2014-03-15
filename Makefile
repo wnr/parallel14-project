@@ -6,7 +6,7 @@ CC = g++
 MPCC =  mpicc -cc=g++44
 OPENMP = -fopenmp
 LIBS = -lm
-CFLAGS = -O3
+CFLAGS = -O3 -std=c++11
 
 TARGETS = serial pthreads openmp mpi
 
