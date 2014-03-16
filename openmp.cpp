@@ -101,11 +101,6 @@ int main( int argc, char **argv )
     for(int step = 0; step < s; step++ )
     {
         before = read_timer();
-        tc2 += read_timer() - before;
-
-        #pragma omp barrier
-
-        before = read_timer();
         
         #pragma omp for
         for(int i = 0; i < num_cells_side; i++) {

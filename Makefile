@@ -26,6 +26,8 @@ old_serial: old_serial.o common.o
 	$(CC) -o $@ $(LIBS) old_serial.o common.o
 old_openmp: old_openmp.o common.o
 	$(CC_OPENMP) -o $@ $(LIBS) $(OPENMP) old_openmp.o common.o
+old_pthreads: old_pthreads.o common.o
+	$(CC) -o $@ $(LIBS) -lpthread old_pthreads.o common.o
 
 openmp.o: openmp.cpp common.h
 	$(CC_OPENMP) -c $(OPENMP) $(CFLAGS) openmp.cpp
@@ -42,6 +44,8 @@ old_serial.o: old_serial.cpp common.h
 	$(CC) -c $(CFLAGS) old_serial.cpp
 old_openmp.o: old_openmp.cpp common.h
 	$(CC_OPENMP) -c $(OPENMP) $(CFLAGS) old_openmp.cpp
+old_pthreads.o: old_pthreads.cpp common.h
+	$(CC) -c $(CFLAGS) old_pthreads.cpp
 
 clean:
 	rm -f *.o $(TARGETS)
