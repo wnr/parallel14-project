@@ -67,6 +67,15 @@ int main( int argc, char **argv )
         }
     }    
 
+    for(int i = 0; i < n; i++) {
+        double x = particles[i].x;
+        double y = particles[i].y;
+
+        int row = x / cell_size;
+        int col = y / cell_size;
+        (*area)[row][col]->add(&particles[i]);
+    }
+
     double before = 0;
 
     double t = 0;
@@ -81,23 +90,28 @@ int main( int argc, char **argv )
     for( int step = 0; step < s; step++ )
     {
         before = read_timer();
+
         for(int i = 0; i < num_cells_side; i++) {
             for(int j = 0; j < num_cells_side; j++) {
-                (*area)[i][j]->clear();
-            }
+                for(auto it = (*area)[i][j]->begin(); it != (*area)[i][j]->end();) {
+                    particle_t *particle = *it;
+
+                    double x = particle->x;
+                    double y = particle->y;
+
+                    int row = x / cell_size;
+                    int col = y / cell_size;
+
+                    if(row != i || col != j) {
+                        it = (*area)[i][j]->particles.erase(it);
+                        (*area)[row][col]->add(particle);
+                    } else {
+                        ++it;
+                    }
+                }
+            }   
         }
-        tc2 += read_timer() - before;
 
-        before = read_timer();
-        for(int i = 0; i < n; i++) {
-            double x = particles[i].x;
-            double y = particles[i].y;
-
-
-            int row = x / cell_size;
-            int col = y / cell_size;
-            (*area)[row][col]->add(&particles[i]);
-        }
         ta += read_timer() - before;
 
         //
