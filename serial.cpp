@@ -97,25 +97,6 @@ int main( int argc, char **argv )
             int row = x / cell_size;
             int col = y / cell_size;
             (*area)[row][col]->add(&particles[i]);
-
-            // double min_x = x - PARTICLE_SIZE;
-            // double min_y = y - PARTICLE_SIZE;
-            // double max_x = x + PARTICLE_SIZE;
-            // double max_y = y + PARTICLE_SIZE;
-
-
-            // int min_row = min_x / cell_size;
-            // int max_row = max_x / cell_size;
-            // int min_col = min_y / cell_size;
-            // int max_col = max_y / cell_size;
-            
-            // for(int row = min_row; row <= max_row; row++) {
-            //     for(int col = min_col; col <= max_col; col++) {
-            //         if(row > 0 && col > 0 && row < num_cells_side && col < num_cells_side) {
-            //             area[row][col].add(particles[i]);
-            //         }
-            //     }
-            // }
         }
         ta += read_timer() - before;
 
