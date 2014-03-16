@@ -4,7 +4,7 @@
 #CC = g++44
 CC = g++
 CC_OPENMP = gcc-4.9 -lstdc++
-MPCC =  mpicc -cc=g++44
+MPCC =  mpicc
 OPENMP = -fopenmp
 LIBS = -lm
 CFLAGS = -O3 -std=c++11
@@ -28,6 +28,8 @@ old_openmp: old_openmp.o common.o
 	$(CC_OPENMP) -o $@ $(LIBS) $(OPENMP) old_openmp.o common.o
 old_pthreads: old_pthreads.o common.o
 	$(CC) -o $@ $(LIBS) -lpthread old_pthreads.o common.o
+old_mpi: old_mpi.o common.o
+	$(MPCC) -o $@ $(LIBS) $(MPILIBS) old_mpi.o common.o
 
 openmp.o: openmp.cpp common.h
 	$(CC_OPENMP) -c $(OPENMP) $(CFLAGS) openmp.cpp
@@ -46,6 +48,8 @@ old_openmp.o: old_openmp.cpp common.h
 	$(CC_OPENMP) -c $(OPENMP) $(CFLAGS) old_openmp.cpp
 old_pthreads.o: old_pthreads.cpp common.h
 	$(CC) -c $(CFLAGS) old_pthreads.cpp
+old_mpi.o: old_mpi.cpp common.h
+	$(MPCC) -c $(CFLAGS) old_mpi.cpp
 
 clean:
 	rm -f *.o $(TARGETS)
