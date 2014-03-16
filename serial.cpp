@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <math.h>
 #include <vector>
-#include <list>
 #include "common.h"
 
 
@@ -43,15 +42,15 @@ int main( int argc, char **argv )
     cell_size *= 1.01; // Fix so that the cells cover 101 % of the map, to make sure that we don't miss any coordinates
 
     vector<vector<Cell*> > *area = new vector<vector<Cell*> >();
-    vector<vector<list<Cell*>*> > *collissionCells = new vector<vector<list<Cell*>*> >;
+    vector<vector<vector<Cell*>*> > *collissionCells = new vector<vector<vector<Cell*>*> >;
 
     for(int i = 0; i < num_cells_side; i++) {
         area->push_back(vector<Cell*>());
-        collissionCells->push_back(vector<list<Cell*>*>());
+        collissionCells->push_back(vector<vector<Cell*>*>());
 
         for(int j = 0; j < num_cells_side; j++) {
             (*area)[i].push_back(new Cell());
-            (*collissionCells)[i].push_back(new list<Cell*>());
+            (*collissionCells)[i].push_back(new vector<Cell*>());
         }
     }
 
@@ -122,7 +121,7 @@ int main( int argc, char **argv )
         for(int i = 0; i < num_cells_side; i++) {
             for(int j = 0; j < num_cells_side; j++) {
                 Cell *cell = (*area)[i][j];
-                list<Cell*> *cells = (*collissionCells)[i][j];
+                vector<Cell*> *cells = (*collissionCells)[i][j];
 
                 auto it = cell->begin();
                 for(; it != cell->end(); it++) {

@@ -4,7 +4,6 @@
 #include <math.h>
 #include <pthread.h>
 #include <vector>
-#include <list>
 #include "common.h"
 
 using namespace std;
@@ -21,7 +20,7 @@ int f;
 int num_cells_side;
 double cell_size;
 vector<vector<Cell*> > *area;
-vector<vector<list<Cell*>*> > *collissionCells;
+vector<vector<vector<Cell*>*> > *collissionCells;
 double t = 0;
 double tc2 = 0;
 double ta = 0;
@@ -135,7 +134,7 @@ void *thread_routine( void *pthread_id )
         for(int i = first_cell; i < last_cell; i++) {
             for(int j = 0; j < num_cells_side; j++) {
                 Cell *cell = (*area)[i][j];
-                list<Cell*> *cells = (*collissionCells)[i][j];
+                vector<Cell*> *cells = (*collissionCells)[i][j];
 
                 auto it = cell->begin();
                 for(; it != cell->end(); it++) {
@@ -231,15 +230,15 @@ int main( int argc, char **argv )
     cell_size *= 1.01; // Fix so that the cells cover 101 % of the map, to make sure that we don't miss any coordinates
 
     area = new vector<vector<Cell*> >();
-    collissionCells = new vector<vector<list<Cell*>*> >;
+    collissionCells = new vector<vector<vector<Cell*>*> >;
 
     for(int i = 0; i < num_cells_side; i++) {
         area->push_back(vector<Cell*>());
-        collissionCells->push_back(vector<list<Cell*>*>());
+        collissionCells->push_back(vector<vector<Cell*>*>());
 
         for(int j = 0; j < num_cells_side; j++) {
             (*area)[i].push_back(new Cell());
-            (*collissionCells)[i].push_back(new list<Cell*>());
+            (*collissionCells)[i].push_back(new vector<Cell*>());
         }
     }
 
