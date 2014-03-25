@@ -148,6 +148,8 @@ int main( int argc, char **argv )
         //
         before = read_timer();
         for( int i = 0; i < n; i++ ) {
+            //printf("serial: %d, x: %f, y: %f, vx: %f, vy: %f, ax: %f, ay: %f\n", i, particles[i].x, particles[i].y, particles[i].vx, particles[i].vy, particles[i].ax, particles[i].ay);
+            fflush(stdout);
             move( particles[i] );
         }
         tm += read_timer() - before;

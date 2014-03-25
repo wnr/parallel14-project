@@ -4,7 +4,7 @@
 #CC = g++44
 CC = g++
 CC_OPENMP = gcc-4.9 -lstdc++
-MPCC =  mpicc
+MPCC =  mpic++
 OPENMP = -fopenmp
 LIBS = -lm
 CFLAGS = -O3 -std=c++11

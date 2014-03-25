@@ -126,8 +126,6 @@ int main( int argc, char **argv )
 
         #pragma omp single
         {
-            count += to_move.size();
-
             for(int i = 0; i < to_move.size(); i++) {
                 for(auto it = to_move[i].begin(); it != to_move[i].end(); it++) {
                     particle_t *particle = *it;
@@ -140,6 +138,8 @@ int main( int argc, char **argv )
 
                     (*area)[row][col]->add(particle);
                 }
+
+                count += to_move[i].size();
 
                 to_move[i].clear();
             }
