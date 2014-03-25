@@ -6,6 +6,7 @@
 #include <math.h>
 #include <vector>
 #include "common.h"
+#include <algorithm>
 
 using namespace std;
 
@@ -117,11 +118,8 @@ int main( int argc, char **argv )
 
     int n_threads = n_proc;
     int cells_per_thread = (num_cells_side + n_threads - 1) / n_threads;
-    int particles_per_thread = (n + n_threads - 1) / n_threads;
     int first_cell = min(rank * cells_per_thread, num_cells_side);
     int last_cell = min((rank+1) * cells_per_thread, num_cells_side);
-    int first_particle = min(rank * particles_per_thread, n);
-    int last_particle = min((rank+1) * particles_per_thread, n);
 
     MPI_Status status;
     

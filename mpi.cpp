@@ -190,6 +190,8 @@ int main( int argc, char **argv )
     double tsf = 0;
     double tm = 0;
 
+    indexed_particle *buffer = (indexed_particle*)malloc(n * sizeof(indexed_particle));
+
     //
     //  simulate a number of time steps
     //
@@ -264,7 +266,6 @@ int main( int argc, char **argv )
             MPI_Recv(buffer, to_move_n, TO_MOVE_ELEMENT, 0, PARTICLE_CELL_MOVES_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
             to_move = vector<to_move_element>(buffer, buffer + to_move_n);
-
         }
 
         tsm += read_timer() - before;
@@ -301,27 +302,30 @@ int main( int argc, char **argv )
         tcm += read_timer() - before;
 
         before = read_timer();
-        for(int i = first_particle; i < last_particle; i++) {
-            indexed_particle *p = &particles[i];
+        for(int i = first_cell; i < last_cell; i++) {
+            for(int j = 0; j < num_cells_side; j++) {
+                cell_t *cell = area[i * num_cells_side + j];
 
-            p->ax = p->ay = 0;
+                auto it = cell->begin();
+                for(; it != cell->end(); it++) {
+                    indexed_particle *p = *it;
+                    p->ax = p->ay = 0;
 
-
-            double x = p->x;
-            double y = p->y;
-
-            int r = x / cell_size;
-            int c = y / cell_size;
-
-            for(int row = r-1; row <= r+1; row++) {
-                for(int col = c-1; col <= c+1; col++) {
-                    if(row >= 0 && col >= 0 && row < num_cells_side && col < num_cells_side) {
-                        cell_t *cell = area[row * num_cells_side + col];
-                        for(auto p_it = cell->begin(); p_it != cell->end(); p_it++) {
-                            indexed_particle *other_p = *p_it;
-                            apply_force_mpi(*p, *other_p);
+                    for(int row = i-1; row <= i+1; row++) {
+                        for(int col = j-1; col <= j+1; col++) {
+                            if(row >= 0 && col >= 0 && row < num_cells_side && col < num_cells_side) {
+                                cell_t *c = area[row * num_cells_side + col];
+                                auto p_it = c->begin();
+                                for(; p_it != c->end(); p_it++) {
+                                    indexed_particle *other_p = *p_it;
+                                    apply_force_mpi(*p, *other_p);
+                                }
+                            }
                         }
                     }
+
+                    moved_particles.push_back(*p);
+                    move_mpi(moved_particles[moved_particles.size()-1]);
                 }
             }
         }
@@ -332,16 +336,34 @@ int main( int argc, char **argv )
 
         before = read_timer();
         
-        MPI_Allgather(&particles[first_particle], particles_per_thread, PARTICLE, &particles[0], particles_per_thread, PARTICLE, MPI_COMM_WORLD);
+        int nums[n_threads];
+        nums[rank] = moved_particles.size();
+
+        MPI_Allgather(&nums[rank], 1, MPI_INT, &nums[0], 1, MPI_INT, MPI_COMM_WORLD);
+
+        int offsets[n_threads];
+        offsets[0] = 0;
+        for(int i = 1; i < n_threads; i++) {
+            offsets[i] = offsets[i-1] + nums[i-1];
+        }
+
+        copy(moved_particles.begin(), moved_particles.end(), buffer + offsets[rank]);
+
+        MPI_Allgatherv(&buffer[offsets[rank]], nums[rank], PARTICLE, &buffer[0], nums, offsets, PARTICLE, MPI_COMM_WORLD);
 
         tsf += read_timer() - before;
 
         before = read_timer();
         for(int i = 0; i < n; i++) {
+            indexed_particle *p = &buffer[i];
+            indexed_particle *cp = &particles[p->index];
 
-            //printf("mpi: %d, x: %f, y: %f, vx: %f, vy: %f, ax: %f, ay: %f, index: %d\n", rank, moved_particles[i].x, moved_particles[i].y, moved_particles[i].vx, moved_particles[i].vy, moved_particles[i].ax, moved_particles[i].ay, moved_particles[i].index);
-            
-            move_mpi(particles[i]);
+            cp->x = p->x;
+            cp->y = p->y;
+            cp->vx = p->vx;
+            cp->vy = p->vy;
+            cp->ax = p->ax;
+            cp->ay = p->ay;
         }
 
         tm += read_timer() - before;
