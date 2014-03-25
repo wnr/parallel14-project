@@ -7,7 +7,7 @@ CC_OPENMP = gcc-4.9 -lstdc++
 MPCC =  mpic++ -O3 
 OPENMP = -fopenmp
 LIBS = -lm
-CFLAGS = -O3 -std=c++11
+CFLAGS = -O3 -std=c++0x
 
 TARGETS = serial pthreads openmp mpi
 

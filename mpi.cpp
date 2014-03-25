@@ -6,6 +6,7 @@
 #include <math.h>
 #include <vector>
 #include "common.h"
+#include <algorithm>
 
 using namespace std;
 
