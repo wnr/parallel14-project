@@ -179,6 +179,13 @@ int main( int argc, char **argv )
         area[row * num_cells_side + col]->push_back(&particles[i]);
     }
 
+    double tfm = 0;
+    double tsm = 0;
+    double tcm = 0;
+    double tf = 0;
+    double tsf = 0;
+    double tm = 0;
+
     //
     //  simulate a number of time steps
     //
@@ -186,7 +193,6 @@ int main( int argc, char **argv )
     for( int step = 0; step < s; step++ )
     {
         before = read_timer();
-
 
         //for(int i = 0; i < num_cells_side; i++) {
         for( int i = first_cell; i < last_cell; i++ ) {
@@ -209,7 +215,12 @@ int main( int argc, char **argv )
             }
         }
 
+        tfm += read_timer() - before;
+
         const int PARTICLE_CELL_MOVES_TAG = 2;
+
+        MPI_Request request;
+        before = read_timer();
 
         if(rank == 0) {
             int to_move_n;
@@ -230,12 +241,12 @@ int main( int argc, char **argv )
             }
 
             for(int r = 1; r < n_proc; r++) {
-                MPI_Send((void*)&to_move[0], to_move.size(), TO_MOVE_ELEMENT, r, PARTICLE_CELL_MOVES_TAG, MPI_COMM_WORLD);
+                MPI_Ssend((void*)&to_move[0], to_move.size(), TO_MOVE_ELEMENT, r, PARTICLE_CELL_MOVES_TAG, MPI_COMM_WORLD);
             }
 
         } else {
             int to_move_n;
-            MPI_Send((void*)&to_move[0], to_move.size(), TO_MOVE_ELEMENT, 0, PARTICLE_CELL_MOVES_TAG, MPI_COMM_WORLD);
+            MPI_Ssend((void*)&to_move[0], to_move.size(), TO_MOVE_ELEMENT, 0, PARTICLE_CELL_MOVES_TAG, MPI_COMM_WORLD);
             MPI_Probe(0, PARTICLE_CELL_MOVES_TAG, MPI_COMM_WORLD, &status);
             MPI_Get_count(&status, TO_MOVE_ELEMENT, &to_move_n);
 
@@ -251,8 +262,10 @@ int main( int argc, char **argv )
             to_move = vector<to_move_element>(buffer, buffer + to_move_n);
 
         }
-            try {
 
+        tsm += read_timer() - before;
+
+        before = read_timer();
 
         for(auto it = to_move.begin(); it != to_move.end(); it++) {
             to_move_element e = *it;
@@ -260,10 +273,6 @@ int main( int argc, char **argv )
             indexed_particle *p = area[e.current_row * num_cells_side + e.current_col]->at(e.cell_index);
             to_move_particles.push_back(p);
         }
-
-        } catch(const std::out_of_range &e) {
-                printf("troll \n");fflush(stdout);
-            }
 
         for(int i = 0; i < to_move_particles.size(); i++) {
             indexed_particle *particle = to_move_particles[i];
@@ -285,7 +294,9 @@ int main( int argc, char **argv )
 
         moved_particles.clear();
 
-        double before = read_timer();
+        tcm += read_timer() - before;
+
+        before = read_timer();
         for(int i = first_cell; i < last_cell; i++) {
             for(int j = 0; j < num_cells_side; j++) {
                 cell_t *cell = area[i * num_cells_side + j];
@@ -313,8 +324,11 @@ int main( int argc, char **argv )
             }
         }
 
+        tf += read_timer() - before;
+
         const int FORCE_APPLIED_SYNC_TAG = 1;
 
+        before = read_timer();
         if(rank == 0) {
             int moved_n;
             for(int r = 1; r < n_proc; r++) {
@@ -336,11 +350,11 @@ int main( int argc, char **argv )
             assert(moved_particles.size() == n);
 
             for(int r = 1; r < n_proc; r++) {
-                MPI_Send(&moved_particles[0], moved_particles.size(), PARTICLE, r, FORCE_APPLIED_SYNC_TAG, MPI_COMM_WORLD);
+                MPI_Ssend(&moved_particles[0], moved_particles.size(), PARTICLE, r, FORCE_APPLIED_SYNC_TAG, MPI_COMM_WORLD);
             }
         } else {
             int moved_n;
-            MPI_Send(&moved_particles[0], moved_particles.size(), PARTICLE, 0, FORCE_APPLIED_SYNC_TAG, MPI_COMM_WORLD);
+            MPI_Ssend(&moved_particles[0], moved_particles.size(), PARTICLE, 0, FORCE_APPLIED_SYNC_TAG, MPI_COMM_WORLD);
             MPI_Probe(0, FORCE_APPLIED_SYNC_TAG, MPI_COMM_WORLD, &status);
             MPI_Get_count(&status, PARTICLE, &moved_n);
 
@@ -355,7 +369,9 @@ int main( int argc, char **argv )
             moved_particles = vector<indexed_particle>(buffer, buffer + moved_n);
         }
 
+        tsf += read_timer() - before;
 
+        before = read_timer();
         for(int i = 0; i < moved_particles.size(); i++) {
 
             //printf("mpi: %d, x: %f, y: %f, vx: %f, vy: %f, ax: %f, ay: %f, index: %d\n", rank, moved_particles[i].x, moved_particles[i].y, moved_particles[i].vx, moved_particles[i].vy, moved_particles[i].ax, moved_particles[i].ay, moved_particles[i].index);
@@ -367,12 +383,15 @@ int main( int argc, char **argv )
             
         }
 
+        tm += read_timer() - before;
+
         if(rank == 0 && fsave && (step%f) == 0) {
             save_mpi( fsave, n, particles );
         }
     }
     simulation_time = read_timer( ) - simulation_time;
-    
+
+    printf("rank: %d\ntfm: %f\ntsm: %f\ntcm: %f\ntf: %f\ntsf: %f\ntm: %f\n", rank, tfm, tsm, tcm, tf, tsf, tm);
     if( rank == 0 ) {
         printf( "n = %d, n_procs = %d, simulation time = %g s\n", n, n_proc, simulation_time );
     }
