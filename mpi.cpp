@@ -118,13 +118,8 @@ int main( int argc, char **argv )
 
     int n_threads = n_proc;
     int cells_per_thread = (num_cells_side + n_threads - 1) / n_threads;
-    int particles_per_thread = (n + n_threads - 1) / n_threads;
     int first_cell = min(rank * cells_per_thread, num_cells_side);
     int last_cell = min((rank+1) * cells_per_thread, num_cells_side);
-    int first_particle = min(rank * particles_per_thread, n);
-    int last_particle = min((rank+1) * particles_per_thread, n);
-
-    printf("rank: %d %d %d %d\n", rank, first_particle, last_particle, particles_per_thread);
 
     MPI_Status status;
     
@@ -303,27 +298,29 @@ int main( int argc, char **argv )
         tcm += read_timer() - before;
 
         before = read_timer();
-        for(int i = first_particle; i < last_particle; i++) {
-            indexed_particle *p = &particles[i];
+        for(int i = first_cell; i < last_cell; i++) {
+            for(int j = 0; j < num_cells_side; j++) {
+                cell_t *cell = area[i * num_cells_side + j];
 
-            p->ax = p->ay = 0;
+                auto it = cell->begin();
+                for(; it != cell->end(); it++) {
+                    indexed_particle *p = *it;
+                    p->ax = p->ay = 0;
 
-
-            double x = p->x;
-            double y = p->y;
-
-            int r = x / cell_size;
-            int c = y / cell_size;
-
-            for(int row = r-1; row <= r+1; row++) {
-                for(int col = c-1; col <= c+1; col++) {
-                    if(row >= 0 && col >= 0 && row < num_cells_side && col < num_cells_side) {
-                        cell_t *cell = area[row * num_cells_side + col];
-                        for(auto p_it = cell->begin(); p_it != cell->end(); p_it++) {
-                            indexed_particle *other_p = *p_it;
-                            apply_force_mpi(*p, *other_p);
+                    for(int row = i-1; row <= i+1; row++) {
+                        for(int col = j-1; col <= j+1; col++) {
+                            if(row >= 0 && col >= 0 && row < num_cells_side && col < num_cells_side) {
+                                cell_t *c = area[row * num_cells_side + col];
+                                auto p_it = c->begin();
+                                for(; p_it != c->end(); p_it++) {
+                                    indexed_particle *other_p = *p_it;
+                                    apply_force_mpi(*p, *other_p);
+                                }
+                            }
                         }
                     }
+
+                    moved_particles.push_back(*p);
                 }
             }
         }
@@ -333,17 +330,58 @@ int main( int argc, char **argv )
         const int FORCE_APPLIED_SYNC_TAG = 1;
 
         before = read_timer();
-        
-        MPI_Allgather(&particles[first_particle], particles_per_thread, PARTICLE, &particles[0], particles_per_thread, PARTICLE, MPI_COMM_WORLD);
+        if(rank == 0) {
+            int moved_n;
+            for(int r = 1; r < n_proc; r++) {
+                MPI_Probe(r, FORCE_APPLIED_SYNC_TAG, MPI_COMM_WORLD, &status);
+                MPI_Get_count(&status, PARTICLE, &moved_n);
+
+                if(moved_n == MPI_UNDEFINED) {
+                    printf("error, invalid count sent."); fflush(stdout);
+                    exit(2);
+                }
+
+                indexed_particle *buffer = (indexed_particle*)malloc(moved_n * sizeof(indexed_particle));
+
+                MPI_Recv(buffer, moved_n, PARTICLE, r, FORCE_APPLIED_SYNC_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                //moved_particles.reserve(moved_particles.size() + moved_n);
+                copy(buffer, buffer + moved_n, back_inserter(moved_particles));
+            }
+
+            assert(moved_particles.size() == n);
+
+            for(int r = 1; r < n_proc; r++) {
+                MPI_Ssend(&moved_particles[0], moved_particles.size(), PARTICLE, r, FORCE_APPLIED_SYNC_TAG, MPI_COMM_WORLD);
+            }
+        } else {
+            int moved_n;
+            MPI_Ssend(&moved_particles[0], moved_particles.size(), PARTICLE, 0, FORCE_APPLIED_SYNC_TAG, MPI_COMM_WORLD);
+            MPI_Probe(0, FORCE_APPLIED_SYNC_TAG, MPI_COMM_WORLD, &status);
+            MPI_Get_count(&status, PARTICLE, &moved_n);
+
+            if(moved_n == MPI_UNDEFINED) {
+                printf("error, invalid count sent."); fflush(stdout);
+                exit(2);
+            }
+
+            //moved_particles.reserve(moved_particles.size() + moved_n);
+            indexed_particle *buffer = (indexed_particle*)malloc(moved_n * sizeof(indexed_particle));
+            MPI_Recv(buffer, moved_n, PARTICLE, 0, FORCE_APPLIED_SYNC_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            moved_particles = vector<indexed_particle>(buffer, buffer + moved_n);
+        }
 
         tsf += read_timer() - before;
 
         before = read_timer();
-        for(int i = 0; i < n; i++) {
+        for(int i = 0; i < moved_particles.size(); i++) {
 
             //printf("mpi: %d, x: %f, y: %f, vx: %f, vy: %f, ax: %f, ay: %f, index: %d\n", rank, moved_particles[i].x, moved_particles[i].y, moved_particles[i].vx, moved_particles[i].vy, moved_particles[i].ax, moved_particles[i].ay, moved_particles[i].index);
+                indexed_particle *mp = &moved_particles[i];
+                indexed_particle *p = &particles[mp->index];
+                p->ax = mp->ax;
+                p->ay = mp->ay;
+                move_mpi(particles[mp->index]);
             
-            move_mpi(particles[i]);
         }
 
         tm += read_timer() - before;

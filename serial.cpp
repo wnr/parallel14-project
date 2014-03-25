@@ -118,23 +118,22 @@ int main( int argc, char **argv )
         //
         
         before = read_timer();
-        for(int i = 0; i < n; i++) {
-            particle_t *p = &particles[i];
+        for(int i = 0; i < num_cells_side; i++) {
+            for(int j = 0; j < num_cells_side; j++) {
+                Cell *cell = (*area)[i][j];
+                vector<Cell*> *cells = (*collissionCells)[i][j];
 
-            p->ax = p->ay = 0;
+                auto it = cell->begin();
+                for(; it != cell->end(); it++) {
+                    particle_t *p = *it;
+                    p->ax = p->ay = 0;
 
+                    auto cells_it = cells->begin();
+                    for(; cells_it != cells->end(); cells_it++) {
+                        auto c = *cells_it;
 
-            double x = p->x;
-            double y = p->y;
-
-            int r = x / cell_size;
-            int c = y / cell_size;
-
-            for(int row = r-1; row <= r+1; row++) {
-                for(int col = c-1; col <= c+1; col++) {
-                    if(row >= 0 && col >= 0 && row < num_cells_side && col < num_cells_side) {
-                        Cell *cell = (*area)[row][col];
-                        for(auto p_it = cell->begin(); p_it != cell->end(); p_it++) {
+                        auto p_it = c->begin();
+                        for(; p_it != c->end(); p_it++) {
                             particle_t *other_p = *p_it;
                             apply_force(*p, *other_p);
                         }
@@ -150,7 +149,6 @@ int main( int argc, char **argv )
         before = read_timer();
         for( int i = 0; i < n; i++ ) {
             //printf("serial: %d, x: %f, y: %f, vx: %f, vy: %f, ax: %f, ay: %f\n", i, particles[i].x, particles[i].y, particles[i].vx, particles[i].vy, particles[i].ax, particles[i].ay);
-            fflush(stdout);
             move( particles[i] );
         }
         tm += read_timer() - before;
