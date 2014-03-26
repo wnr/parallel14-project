@@ -116,6 +116,7 @@ int main( int argc, char **argv )
         //
         //  compute forces
         //
+        int cnt = 0;
         
         before = read_timer();
         for(int i = 0; i < num_cells_side; i++) {
@@ -137,6 +138,10 @@ int main( int argc, char **argv )
                             particle_t *other_p = *p_it;
                             apply_force(*p, *other_p);
                         }
+                    }
+
+                    if(p->ax != 0 && p->ay != 0) {
+                        cnt++;
                     }
                 }
             }

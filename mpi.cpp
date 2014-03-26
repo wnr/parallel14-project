@@ -324,8 +324,9 @@ int main( int argc, char **argv )
                         }
                     }
 
-                    moved_particles.push_back(*p);
-                    move_mpi(moved_particles[moved_particles.size()-1]);
+                    if(p->ax != 0 || p->ay != 0) {
+                        moved_particles.push_back(*p);
+                    }
                 }
             }
         }
@@ -351,19 +352,26 @@ int main( int argc, char **argv )
 
         MPI_Allgatherv(&buffer[offsets[rank]], nums[rank], PARTICLE, &buffer[0], nums, offsets, PARTICLE, MPI_COMM_WORLD);
 
-        tsf += read_timer() - before;
-
-        before = read_timer();
         for(int i = 0; i < n; i++) {
+            particles[i].ax = 0;
+            particles[i].ay = 0;
+        }
+
+        int limit = offsets[n_threads-1] + nums[n_threads-1];
+        for(int i = 0; i < limit; i++) {
             indexed_particle *p = &buffer[i];
             indexed_particle *cp = &particles[p->index];
 
-            cp->x = p->x;
-            cp->y = p->y;
-            cp->vx = p->vx;
-            cp->vy = p->vy;
             cp->ax = p->ax;
             cp->ay = p->ay;
+        }
+
+        tsf += read_timer() - before;
+
+        before = read_timer();
+
+        for(int i = 0; i < n; i++) {
+            move_mpi(particles[i]);
         }
 
         tm += read_timer() - before;
